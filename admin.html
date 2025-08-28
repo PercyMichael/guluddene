@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cultural Hub - Admin Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 250px;
+      background: #333;
+      color: #fff;
+      padding: 20px;
+    }
+
+    .sidebar h2 { text-align: center; margin-bottom: 20px; }
+    .sidebar ul { list-style: none; padding: 0; }
+    .sidebar ul li {
+      padding: 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      background: #444;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .sidebar ul li:hover { background: #555; }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    .card {
+      background: #fff;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    h3 { margin-top: 0; }
+
+    input, textarea, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+
+    button {
+      background: #15a9e1;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover { background: #1294c7; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+
+    .review {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+    }
+
+    .review button {
+      margin-left: 5px;
+      padding: 5px 10px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .approve-btn { background: green; color: #fff; }
+    .delete-btn { background: crimson; color: #fff; }
+    .admin-btn { background: #dd9803; color: #fff; }
+
+    /* Table for Users */
+    .users-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .users-table th, .users-table td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+    .users-table th {
+      background: #f0f0f0;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #333;
+      color: white;
+      padding: 15px;
+      border-radius: 5px;
+      z-index: 1000;
+      display: none;
+      animation: slideIn 0.3s ease;
+    }
+    .toast.error { background: #d32f2f; }
+    .toast.success { background: #2e7d32; }
+    @keyframes slideIn {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>Admin Panel</h2>
+    <ul>
+      <li onclick="showSection('blogs')"><i class="fas fa-blog"></i> Manage Blogs</li>
+      <li onclick="showSection('users')"><i class="fas fa-users"></i> Manage Users</li>
+      <li onclick="showSection('reviews')"><i class="fas fa-comments"></i> User Reviews</li>
+    </ul>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Blog Section -->
+    <div id="blogs" class="card section">
+      <h3>Post a New Blog</h3>
+      <form id="blogForm">
+        <input type="text" id="blogTitle" placeholder="Blog Title" required>
+        <textarea id="blogContent" rows="5" placeholder="Blog Content" required></textarea>
+        <input type="text" id="blogCategory" placeholder="Category">
+        <button type="submit">Publish Blog</button>
+      </form>
+      <h4>Existing Blogs</h4>
+      <div id="blogsList"></div>
+    </div>
+
+    <!-- Users Section -->
+    <div id="users" class="card section" style="display:none;">
+      <h3>Manage Users</h3>
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Role</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="usersList"></tbody>
+      </table>
+    </div>
+
+    <!-- Reviews Section -->
+    <div id="reviews" class="card section" style="display:none;">
+      <h3>User Reviews</h3>
+      <div id="reviewsList"></div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Firebase + Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+    import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, getDoc } 
+      from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDwkxK1meIH0Ud2Pide0c9PQEsWebPWUvs",
+      authDomain: "gguluddene.firebaseapp.com",
+      projectId: "gguluddene",
+      storageBucket: "gguluddene.firebasestorage.app",
+      messagingSenderId: "418864999337",
+      appId: "1:418864999337:web:fb6468f95c6633b670b2b8",
+      measurementId: "G-L6V7HQQSJ9"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Show toast notification
+    const showToast = (message, type = "error") => {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.className = `toast ${type}`;
+      toast.style.display = "block";
+      setTimeout(() => {
+        toast.style.display = "none";
+      }, 5000);
+    };
+
+    // Check if user is admin
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        showToast("You must be logged in to access the admin dashboard.");
+        window.location.href = "membership.html";
+        return;
+      }
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (!userDoc.exists() || userDoc.data().role !== "admin") {
+        showToast("Access denied. Admins only.");
+        window.location.href = "index.html";
+        return;
+      }
+      // Load data only if user is admin
+      fetchBlogs();
+      fetchUsers();
+      fetchReviews();
+    });
+
+    // Section Switcher
+    function showSection(sectionId) {
+      document.querySelectorAll('.section').forEach(sec => sec.style.display = 'none');
+      document.getElementById(sectionId).style.display = 'block';
+    }
+
+    // BLOGS
+    const blogsList = document.getElementById('blogsList');
+    const blogForm = document.getElementById('blogForm');
+
+    async function fetchBlogs() {
+      blogsList.innerHTML = '';
+      try {
+        console.log("Fetching blogs from Firestore...");
+        const snapshot = await getDocs(collection(db, 'blogs'));
+        if (snapshot.empty) {
+          blogsList.innerHTML = '<p>No blogs found.</p>';
+          return;
+        }
+        snapshot.forEach(docSnap => {
+          const blog = docSnap.data();
+          const div = document.createElement('div');
+          div.className = 'review';
+          div.innerHTML = `<strong>${blog.title}</strong> <br> ${blog.content} <br> <em>${blog.category || ''}</em>`;
+          blogsList.appendChild(div);
+        });
+        console.log("Blogs fetched successfully.");
+      } catch (error) {
+        console.error("Error fetching blogs:", error.code, error.message);
+        showToast("Failed to fetch blogs: " + error.message);
+      }
+    }
+
+    blogForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const title = document.getElementById('blogTitle').value;
+      const content = document.getElementById('blogContent').value;
+      const category = document.getElementById('blogCategory').value;
+      try {
+        console.log("Attempting to add blog:", title);
+        await addDoc(collection(db, 'blogs'), { title, content, category });
+        showToast("Blog published successfully.", "success");
+        blogForm.reset();
+        fetchBlogs();
+      } catch (error) {
+        console.error("Error adding blog:", error.code, error.message);
+        showToast("Failed to publish blog: " + error.message);
+      }
+    });
+
+    // USERS
+    const usersList = document.getElementById('usersList');
+    async function fetchUsers() {
+      usersList.innerHTML = '';
+      try {
+        console.log("Fetching users from Firestore...");
+        const snapshot = await getDocs(collection(db, 'users'));
+        if (snapshot.empty) {
+          usersList.innerHTML = '<tr><td colspan="5">No users found.</td></tr>';
+          console.log("No users found in Firestore.");
+          return;
+        }
+        snapshot.forEach(docSnap => {
+          const user = docSnap.data();
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${user.name}</td>
+            <td>${user.email}</td>
+            <td>${user.status || 'N/A'}</td>
+            <td>${user.role || 'user'}</td>
+            <td>
+              ${user.status === 'pending' ? `<button class="approve-btn" onclick="approveUser('${docSnap.id}')">Approve</button>` : ''}
+              <button class="admin-btn" onclick="toggleAdmin('${docSnap.id}', '${user.role === 'admin' ? 'user' : 'admin'}')">
+                ${user.role === 'admin' ? 'Demote to User' : 'Make Admin'}
+              </button>
+            </td>
+          `;
+          usersList.appendChild(row);
+        });
+        console.log("Users fetched successfully.");
+      } catch (error) {
+        console.error("Error fetching users:", error.code, error.message);
+        showToast("Failed to fetch users: " + error.message);
+      }
+    }
+
+    window.approveUser = async (userId) => {
+      const userRef = doc(db, 'users', userId);
+      try {
+        console.log("Approving user:", userId);
+        await updateDoc(userRef, { status: 'approved' });
+        showToast("User approved successfully.", "success");
+        fetchUsers();
+      } catch (error) {
+        console.error("Error approving user:", error.code, error.message);
+        showToast("Failed to approve user: " + error.message);
+      }
+    };
+
+    window.toggleAdmin = async (userId, role) => {
+      const userRef = doc(db, 'users', userId);
+      const button = event.target;
+      button.disabled = true;
+      button.textContent = "Processing...";
+      try {
+        console.log(`Setting user ${userId} role to: ${role}`);
+        await updateDoc(userRef, { role });
+        showToast(`User role updated to ${role}.`, "success");
+        fetchUsers();
+      } catch (error) {
+        console.error("Error updating user role:", error.code, error.message);
+        showToast("Failed to update role: " + error.message);
+      } finally {
+        button.disabled = false;
+        button.textContent = role === 'admin' ? 'Demote to User' : 'Make Admin';
+      }
+    };
+
+    // REVIEWS
+    const reviewsList = document.getElementById('reviewsList');
+    async function fetchReviews() {
+      reviewsList.innerHTML = '';
+      try {
+        console.log("Fetching reviews from Firestore...");
+        const snapshot = await getDocs(collection(db, 'reviews'));
+        if (snapshot.empty) {
+          reviewsList.innerHTML = '<p>No reviews found.</p>';
+          return;
+        }
+        snapshot.forEach(docSnap => {
+          const rev = docSnap.data();
+          const div = document.createElement('div');
+          div.className = 'review';
+          div.innerHTML = `
+            <p><strong>${rev.userName}</strong>: ${rev.text}</p>
+            <button class="delete-btn" onclick="deleteReview('${docSnap.id}')">Delete</button>
+          `;
+          reviewsList.appendChild(div);
+        });
+        console.log("Reviews fetched successfully.");
+      } catch (error) {
+        console.error("Error fetching reviews:", error.code, error.message);
+        showToast("Failed to fetch reviews: " + error.message);
+      }
+    }
+
+    window.deleteReview = async (reviewId) => {
+      const revRef = doc(db, 'reviews', reviewId);
+      try {
+        console.log("Deleting review:", reviewId);
+        await deleteDoc(revRef);
+        showToast("Review deleted successfully.", "success");
+        fetchReviews();
+      } catch (error) {
+        console.error("Error deleting review:", error.code, error.message);
+        showToast("Failed to delete review: " + error.message);
+      }
+    };
+  </script>
+</body>
+</html>

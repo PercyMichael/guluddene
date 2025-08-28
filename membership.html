@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cultural Hub - Membership</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    /* Membership Section */
+    .membership-container {
+      max-width: 500px;
+      margin: 50px auto;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .membership-container h1 {
+      font-size: 2.5em;
+      color: #dd9803;
+      margin-bottom: 40px;
+    }
+
+    .form-box {
+      background: #f9f9f9;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+      margin-bottom: 40px;
+      transition: transform 0.3s ease;
+    }
+
+    .form-box:hover {
+      transform: translateY(-5px);
+    }
+
+    .form-box h3 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .form-box input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    .form-box button {
+      width: 100%;
+      padding: 12px;
+      background: #dd9803;
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .form-box button:hover {
+      background: #b77b03;
+    }
+
+    .form-box button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .switch-form {
+      margin-top: 15px;
+      font-size: 0.9em;
+    }
+
+    .switch-form a {
+      color: #dd9803;
+      text-decoration: none;
+    }
+
+    .switch-form a:hover {
+      text-decoration: underline;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #333;
+      color: white;
+      padding: 15px;
+      border-radius: 5px;
+      z-index: 1000;
+      display: none;
+      animation: slideIn 0.3s ease;
+    }
+
+    .toast.error {
+      background: #d32f2f;
+    }
+
+    .toast.success {
+      background: #2e7d32;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Top Navigation Bar -->
+  <nav class="navbar">
+    <div class="logo-container">
+      <img src="assets/images/logoo.png" alt="Traditional Healers Uganda Logo" class="logo-img">
+    </div>
+    <ul class="nav-links">
+      <li><a href="index.html" class="active">Home</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="resources.html">Resources</a></li>
+      <li><a href="membership.html">Membership</a></li>
+      <li><a href="services.html">Services</a></li>
+      <li><a href="news.html">News</a></li>
+      <li><a href="contact.html">Contact</a></li>
+      <li><a href="donation.html">Donate</a></li>
+      <li><a href="advocacy.html">Advocacy</a></li>
+    </ul>
+    <div class="hamburger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </nav>
+
+  <!-- Membership Section -->
+  <main>
+    <section class="membership-container">
+      <h1>Membership Portal</h1>
+
+      <!-- Registration Form -->
+      <div class="form-box" id="register-box">
+        <h3>Register</h3>
+        <form id="registerForm">
+          <input type="text" id="fullName" placeholder="Full Name" required>
+          <input type="email" id="registerEmail" placeholder="Email Address" required>
+          <input type="password" id="registerPassword" placeholder="Password (min 6 characters)" required>
+          <button type="submit">Sign Up</button>
+        </form>
+        <p class="switch-form">
+          Already have an account? 
+          <a href="#" id="show-login">Login here</a>
+        </p>
+      </div>
+
+      <!-- Login Form (hidden by default) -->
+      <div class="form-box" id="login-box" style="display: none;">
+        <h3>Login</h3>
+        <form id="loginForm">
+          <input type="email" id="loginEmail" placeholder="Email Address" required>
+          <input type="password" id="loginPassword" placeholder="Password" required>
+          <button type="submit">Login</button>
+        </form>
+        <p class="switch-form">
+          Don't have an account? 
+          <a href="#" id="show-register">Register here</a>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Firebase Authentication & Firestore -->
+  <script type="module">
+    // Import Firebase SDKs
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } 
+      from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc } 
+      from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    // Firebase config (SECURITY WARNING: Move to backend for production)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDwkxK1meIH0Ud2Pide0c9PQEsWebPWUvs",
+      authDomain: "gguluddene.firebaseapp.com",
+      projectId: "gguluddene",
+      storageBucket: "gguluddene.firebasestorage.app",
+      messagingSenderId: "418864999337",
+      appId: "1:418864999337:web:fb6468f95c6633b670b2b8",
+      measurementId: "G-L6V7HQQSJ9"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // DOM elements
+    const registerForm = document.getElementById("registerForm");
+    const loginForm = document.getElementById("loginForm");
+    const showLoginLink = document.getElementById("show-login");
+    const showRegisterLink = document.getElementById("show-register");
+    const loginBox = document.getElementById("login-box");
+    const registerBox = document.getElementById("register-box");
+    const toast = document.getElementById("toast");
+
+    // Toggle forms
+    showLoginLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      registerBox.style.display = "none";
+      loginBox.style.display = "block";
+      loginBox.scrollIntoView({ behavior: "smooth" });
+    });
+
+    showRegisterLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      loginBox.style.display = "none";
+      registerBox.style.display = "block";
+      registerBox.scrollIntoView({ behavior: "smooth" });
+    });
+
+    // Show toast notification
+    const showToast = (message, type = "error") => {
+      toast.textContent = message;
+      toast.className = `toast ${type}`;
+      toast.style.display = "block";
+      setTimeout(() => {
+        toast.style.display = "none";
+      }, 5000);
+    };
+
+    // User-friendly error messages
+    const getFriendlyErrorMessage = (errorCode) => {
+      switch (errorCode) {
+        case "auth/email-already-in-use":
+          return "This email is already registered. Please use another email or log in.";
+        case "auth/invalid-email":
+          return "Please enter a valid email address.";
+        case "auth/weak-password":
+          return "Password must be at least 6 characters and include a number and special character.";
+        case "auth/user-not-found":
+        case "auth/wrong-password":
+          return "Invalid email or password.";
+        case "auth/too-many-requests":
+          return "Too many attempts. Please try again later.";
+        case "permission-denied":
+          return "Database access denied. Please contact support.";
+        default:
+          return "An error occurred. Please try again or contact support.";
+      }
+    };
+
+    // Disable button and show loading state
+    const setButtonLoading = (button, isLoading) => {
+      button.disabled = isLoading;
+      button.textContent = isLoading ? "Processing..." : button.dataset.originalText;
+    };
+
+    // Email validation regex
+    const isValidEmail = (email) => {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(email);
+    };
+
+    // Password validation regex (at least 6 characters, 1 number, 1 special character)
+    const isValidPassword = (password) => {
+      const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,}$/;
+      return passwordRegex.test(password);
+    };
+
+    // Registration handler
+    registerForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("registerEmail").value.trim();
+      const password = document.getElementById("registerPassword").value;
+      const fullName = document.getElementById("fullName").value.trim();
+      const submitButton = registerForm.querySelector("button");
+
+      // Client-side validation
+      if (fullName.length < 2) {
+        showToast("Full name must be at least 2 characters.");
+        return;
+      }
+      if (!isValidEmail(email)) {
+        showToast("Please enter a valid email address.");
+        return;
+      }
+      if (!isValidPassword(password)) {
+        showToast("Password must be at least 6 characters and include a number and special character.");
+        return;
+      }
+
+      submitButton.dataset.originalText = submitButton.textContent;
+      setButtonLoading(submitButton, true);
+
+      try {
+        console.log("Attempting to create user with email:", email);
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        console.log("User created in Authentication:", user.uid);
+
+        console.log("Attempting to write to Firestore for user:", user.uid);
+        await setDoc(doc(db, "users", user.uid), {
+          name: fullName,
+          email: email,
+          role: "user",
+          status: "approved", // Set to approved since no email verification
+          createdAt: new Date().toISOString()
+        });
+        console.log("Firestore write successful for user:", user.uid);
+
+        showToast(`Registration successful! Welcome, ${fullName}. Please log in to continue.`, "success");
+        e.target.reset();
+        loginBox.style.display = "block";
+        registerBox.style.display = "none";
+      } catch (error) {
+        console.error("Registration error:", error.code, error.message);
+        showToast(getFriendlyErrorMessage(error.code));
+      } finally {
+        setButtonLoading(submitButton, false);
+      }
+    });
+
+    // Login handler
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value;
+      const submitButton = loginForm.querySelector("button");
+
+      // Client-side validation
+      if (!isValidEmail(email)) {
+        showToast("Please enter a valid email address.");
+        return;
+      }
+      if (password.length < 6) {
+        showToast("Password must be at least 6 characters.");
+        return;
+      }
+
+      submitButton.dataset.originalText = submitButton.textContent;
+      setButtonLoading(submitButton, true);
+
+      try {
+        console.log("Attempting to log in with email:", email);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        console.log("User logged in:", user.uid);
+
+        console.log("Fetching user data from Firestore for user:", user.uid);
+        const userSnap = await getDoc(doc(db, "users", user.uid));
+        if (userSnap.exists()) {
+          const role = userSnap.data().role;
+          console.log("User role:", role);
+          if (role === "admin") {
+            window.location.href = "admin.html";
+          } else {
+            window.location.href = "index.html";
+          }
+        } else {
+          console.error("User data not found in Firestore for user:", user.uid);
+          showToast("User data not found. Please contact support.");
+        }
+      } catch (error) {
+        console.error("Login error:", error.code, error.message);
+        showToast(getFriendlyErrorMessage(error.code));
+      } finally {
+        setButtonLoading(submitButton, false);
+      }
+    });
+  </script>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-section about">
+        <h3>About Us</h3>
+        <p>We are committed to preserving traditional healing practices and Uganda’s rich cultural heritage through training, advocacy, and community engagement.</p>
+      </div>
+      <div class="footer-section contact">
+        <h3>Contact Us</h3>
+        <ul>
+          <li><i class="fas fa-map-marker-alt"></i> P.O. Box 166066, Kampala, Uganda</li>
+          <li><i class="fas fa-envelope"></i> <a href="mailto:guluddenetradition@gmail.com">guluddenetradition@gmail.com</a></li>
+          <li><i class="fas fa-phone"></i> <a href="tel:+256701551719">+256(0)701 551719</a> / <a href="tel:+256752697731">+256(0)752 697731</a></li>
+        </ul>
+      </div>
+      <div class="footer-section social">
+        <h3>Follow Us</h3>
+        <div class="social-icons">
+          <a href="#"><i class="fab fa-facebook-f"></i></a>
+          <a href="#"><i class="fab fa-x-twitter"></i></a>
+          <a href="#"><i class="fab fa-youtube"></i></a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>Motto: “Unity is Strength” | “Agali awamu ge galuma ennyama”</p>
+      <p>&copy; 2025 Gguluddene Healers & Herbalists Association. All rights reserved.</p>
+    </div>
+  </footer>
+</body>
+</html>

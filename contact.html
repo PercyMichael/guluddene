@@ -1,0 +1,183 @@
+<!-- contact.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cultural Hub - Contact</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    /* Center main heading */
+    .contact-section h1 {
+      text-align: center;
+      font-weight: bold;
+      font-size: 2em;
+      margin-bottom: 30px;
+      color: #000;
+    }
+
+    /* Grid layout for form and info */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      margin: 0 20px;
+    }
+
+    /* Contact card styling */
+    .contact-form, .contact-info {
+      background: #fff;
+      border-radius: 10px;
+      padding: 25px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+
+    .contact-form:hover, .contact-info:hover {
+      transform: translateY(-5px);
+    }
+
+    .contact-form h2, .contact-info h2 {
+      margin-bottom: 15px;
+      color: #dd9803;
+      font-size: 1.3em;
+      text-align: center;
+    }
+
+    /* Form inputs */
+    .contact-form input, 
+    .contact-form textarea {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 1em;
+      resize: none;
+    }
+
+    .contact-form button {
+      background-color: #dd9803;
+      color: #fff;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 5px;
+      font-size: 1em;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+      width: 100%;
+    }
+
+    .contact-form button:hover {
+      background-color: #b77b03;
+    }
+
+    /* Live chat card */
+    .contact-info p {
+      text-align: center;
+      font-size: 1em;
+      color: #555;
+    }
+
+    .contact-info i {
+      font-size: 2em;
+      color: #dd9803;
+      display: block;
+      margin: 15px auto;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+<nav class="navbar">
+  <div class="logo-container">
+    <img src="assets/images/logoo.png" alt="Traditional Healers Uganda Logo" class="logo-img">
+    <!-- <span class="logo-text">Traditional Healers Uganda</span> -->
+  </div>
+  <ul class="nav-links">
+    <li><a href="index.html" class="active">Home</a></li>
+    <li><a href="about.html">About</a></li>
+    <li><a href="resources.html">Resources</a></li>
+    <li><a href="membership.html">Membership</a></li>
+    <li><a href="services.html">Seevices</a></li>
+    <li><a href="news.html">News</a></li>
+    <li><a href="contact.html">Contact</a></li>
+    <li><a href="donation.html">Donate</a></li>
+    <li><a href="advocacy.html">Advocacy</a></li>
+  </ul>
+  <div class="hamburger">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</nav>
+
+  <!-- MAIN CONTENT -->
+  <main>
+    <section class="contact-section">
+      <h1>Contact Us</h1>
+      <div class="contact-grid">
+        
+        <!-- Contact Form -->
+        <div class="contact-form">
+          <h2>Send Us a Message</h2>
+          <form id="contact-form">
+            <input type="text" placeholder="Name" required>
+            <input type="email" placeholder="Email" required>
+            <textarea placeholder="Your Message" rows="6" required></textarea>
+            <button type="submit">Send</button>
+          </form>
+        </div>
+
+        <!-- Live Chat / Info -->
+        <div class="contact-info">
+          <i class="fas fa-comments"></i>
+          <h2>Live Chat</h2>
+          <p>Chat with us (coming soon). Our team is ready to assist you with any inquiries.</p>
+          <h2>Other Contact Details</h2>
+          <p><i class="fas fa-map-marker-alt"></i> </p>
+          <p><i class="fas fa-envelope"></i> <a href="mailto:guluddenetradition@gmail.com">guluddenetradition@gmail.com</a></p>
+          <p><i class="fas fa-phone"></i> <a href="tel:+256701551719">+256(0)701 551719</a></p>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+   <footer>
+    <div class="footer-content">
+      <div class="footer-section about">
+        <h3>About Us</h3>
+        <p>We are committed to preserving traditional healing practices and Uganda’s rich cultural heritage through training, advocacy, and community engagement.</p>
+      </div>
+      <div class="footer-section contact">
+        <h3>Contact Us</h3>
+        <ul>
+          <li><i class="fas fa-map-marker-alt"></i> P.O. Box 166066, Kampala, Uganda</li>
+          <li><i class="fas fa-envelope"></i> <a href="mailto:guluddenetradition@gmail.com">guluddenetradition@gmail.com</a></li>
+          <li><i class="fas fa-phone"></i> <a href="tel:+256701551719">+256(0)701 551719</a> / <a href="tel:+256752697731">+256(0)752 697731</a></li>
+        </ul>
+      </div>
+      <div class="footer-section social">
+        <h3>Follow Us</h3>
+        <div class="social-icons">
+          <a href="#"><i class="fab fa-facebook-f"></i></a>
+          <a href="#"><i class="fab fa-x-twitter"></i></a>
+          <a href="#"><i class="fab fa-youtube"></i></a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>Motto: “Unity is Strength” | “Agali awamu ge galuma ennyama”</p>
+      <p>&copy; 2025 Gguluddene Healers & Herbalists Association. All rights reserved.</p>
+    </div>
+  </footer>
+
+
+  <script src="script.js"></script>
+</body>
+</html>
