@@ -180,213 +180,167 @@
 
   <!-- Firebase + Script -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-    import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, getDoc } 
-      from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+  // Import Firebase SDKs
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification } 
+    from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc } 
+    from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDwkxK1meIH0Ud2Pide0c9PQEsWebPWUvs",
-      authDomain: "gguluddene.firebaseapp.com",
-      projectId: "gguluddene",
-      storageBucket: "gguluddene.firebasestorage.app",
-      messagingSenderId: "418864999337",
-      appId: "1:418864999337:web:fb6468f95c6633b670b2b8",
-      measurementId: "G-L6V7HQQSJ9"
-    };
+  // Firebase config (move to backend for production)
+  const firebaseConfig = {
+    apiKey: "AIzaSyDwkxK1meIH0Ud2Pide0c9PQEsWebPWUvs",
+    authDomain: "gguluddene.firebaseapp.com",
+    projectId: "gguluddene",
+    storageBucket: "gguluddene.firebasestorage.app",
+    messagingSenderId: "418864999337",
+    appId: "1:418864999337:web:fb6468f95c6633b670b2b8",
+    measurementId: "G-L6V7HQQSJ9"
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-    // Show toast notification
-    const showToast = (message, type = "error") => {
-      const toast = document.getElementById("toast");
-      toast.textContent = message;
-      toast.className = `toast ${type}`;
-      toast.style.display = "block";
-      setTimeout(() => {
-        toast.style.display = "none";
-      }, 5000);
-    };
+  // DOM elements
+  const registerForm = document.getElementById("registerForm");
+  const loginForm = document.getElementById("loginForm");
+  const showLoginLink = document.getElementById("show-login");
+  const loginBox = document.getElementById("login-box");
+  const registerBox = document.getElementById("register-box");
 
-    // Check if user is admin
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        showToast("You must be logged in to access the admin dashboard.");
-        window.location.href = "membership.html";
+  // Toggle forms
+  showLoginLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    registerBox.style.display = "none";
+    loginBox.style.display = "block";
+    loginBox.scrollIntoView({ behavior: "smooth" });
+  });
+
+  // Add "Back to Register" link dynamically to login form
+  const switchToRegister = document.createElement("p");
+  switchToRegister.className = "switch-form";
+  switchToRegister.innerHTML = `Don't have an account? <a href="#" id="show-register">Register here</a>`;
+  loginBox.appendChild(switchToRegister);
+  document.getElementById("show-register").addEventListener("click", (e) => {
+    e.preventDefault();
+    loginBox.style.display = "none";
+    registerBox.style.display = "block";
+    registerBox.scrollIntoView({ behavior: "smooth" });
+  });
+
+  // User-friendly error messages
+  const getFriendlyErrorMessage = (errorCode) => {
+    switch (errorCode) {
+      case "auth/email-already-in-use":
+        return "This email is already registered. Please use another email or log in.";
+      case "auth/invalid-email":
+        return "Please enter a valid email address.";
+      case "auth/weak-password":
+        return "Password must be at least 6 characters long.";
+      case "auth/user-not-found":
+      case "auth/wrong-password":
+        return "Invalid email or password.";
+      case "auth/too-many-requests":
+        return "Too many attempts. Please try again later.";
+      default:
+        return "An error occurred. Please try again.";
+    }
+  };
+
+  // Disable button and show loading state
+  const setButtonLoading = (button, isLoading) => {
+    button.disabled = isLoading;
+    button.textContent = isLoading ? "Processing..." : button.dataset.originalText;
+  };
+
+  // Registration handler
+  registerForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("registerEmail").value.trim();
+    const password = document.getElementById("registerPassword").value;
+    const fullName = document.getElementById("fullName").value.trim();
+    const submitButton = registerForm.querySelector("button");
+
+    // Basic client-side validation
+    if (fullName.length < 2) {
+      alert("⚠️ Full name must be at least 2 characters.");
+      return;
+    }
+    if (password.length < 6) {
+      alert("⚠️ Password must be at least 6 characters.");
+      return;
+    }
+
+    submitButton.dataset.originalText = submitButton.textContent;
+    setButtonLoading(submitButton, true);
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Save user data to Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        name: fullName,
+        email: email,
+        role: "user",
+        status: "pending",
+        createdAt: new Date().toISOString()
+      });
+
+      // Send email verification
+      await sendEmailVerification(user);
+
+      alert(`✅ Registration successful! Welcome, ${fullName}. Please check your email to verify your account.`);
+      e.target.reset();
+      loginBox.style.display = "block";
+      registerBox.style.display = "none";
+    } catch (error) {
+      alert("⚠️ " + getFriendlyErrorMessage(error.code));
+    } finally {
+      setButtonLoading(submitButton, false);
+    }
+  });
+
+  // Login handler
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+    const submitButton = loginForm.querySelector("button");
+
+    submitButton.dataset.originalText = submitButton.textContent;
+    setButtonLoading(submitButton, true);
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Check if email is verified
+      if (!user.emailVerified) {
+        alert("⚠️ Please verify your email address before logging in.");
         return;
       }
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (!userDoc.exists() || userDoc.data().role !== "admin") {
-        showToast("Access denied. Admins only.");
-        window.location.href = "index.html";
-        return;
-      }
-      // Load data only if user is admin
-      fetchBlogs();
-      fetchUsers();
-      fetchReviews();
-    });
 
-    // Section Switcher
-    function showSection(sectionId) {
-      document.querySelectorAll('.section').forEach(sec => sec.style.display = 'none');
-      document.getElementById(sectionId).style.display = 'block';
-    }
-
-    // BLOGS
-    const blogsList = document.getElementById('blogsList');
-    const blogForm = document.getElementById('blogForm');
-
-    async function fetchBlogs() {
-      blogsList.innerHTML = '';
-      try {
-        console.log("Fetching blogs from Firestore...");
-        const snapshot = await getDocs(collection(db, 'blogs'));
-        if (snapshot.empty) {
-          blogsList.innerHTML = '<p>No blogs found.</p>';
-          return;
+      // Fetch role from Firestore
+      const userSnap = await getDoc(doc(db, "users", user.uid));
+      if (userSnap.exists()) {
+        const role = userSnap.data().role;
+        if (role === "admin") {
+          window.location.href = "admin-dashboard.html";
+        } else {
+          window.location.href = "index.html";
         }
-        snapshot.forEach(docSnap => {
-          const blog = docSnap.data();
-          const div = document.createElement('div');
-          div.className = 'review';
-          div.innerHTML = `<strong>${blog.title}</strong> <br> ${blog.content} <br> <em>${blog.category || ''}</em>`;
-          blogsList.appendChild(div);
-        });
-        console.log("Blogs fetched successfully.");
-      } catch (error) {
-        console.error("Error fetching blogs:", error.code, error.message);
-        showToast("Failed to fetch blogs: " + error.message);
+      } else {
+        alert("⚠️ User data not found. Please contact support.");
       }
+    } catch (error) {
+      alert("⚠️ " + getFriendlyErrorMessage(error.code));
+    } finally {
+      setButtonLoading(submitButton, false);
     }
-
-    blogForm.addEventListener('submit', async e => {
-      e.preventDefault();
-      const title = document.getElementById('blogTitle').value;
-      const content = document.getElementById('blogContent').value;
-      const category = document.getElementById('blogCategory').value;
-      try {
-        console.log("Attempting to add blog:", title);
-        await addDoc(collection(db, 'blogs'), { title, content, category });
-        showToast("Blog published successfully.", "success");
-        blogForm.reset();
-        fetchBlogs();
-      } catch (error) {
-        console.error("Error adding blog:", error.code, error.message);
-        showToast("Failed to publish blog: " + error.message);
-      }
-    });
-
-    // USERS
-    const usersList = document.getElementById('usersList');
-    async function fetchUsers() {
-      usersList.innerHTML = '';
-      try {
-        console.log("Fetching users from Firestore...");
-        const snapshot = await getDocs(collection(db, 'users'));
-        if (snapshot.empty) {
-          usersList.innerHTML = '<tr><td colspan="5">No users found.</td></tr>';
-          console.log("No users found in Firestore.");
-          return;
-        }
-        snapshot.forEach(docSnap => {
-          const user = docSnap.data();
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${user.name}</td>
-            <td>${user.email}</td>
-            <td>${user.status || 'N/A'}</td>
-            <td>${user.role || 'user'}</td>
-            <td>
-              ${user.status === 'pending' ? `<button class="approve-btn" onclick="approveUser('${docSnap.id}')">Approve</button>` : ''}
-              <button class="admin-btn" onclick="toggleAdmin('${docSnap.id}', '${user.role === 'admin' ? 'user' : 'admin'}')">
-                ${user.role === 'admin' ? 'Demote to User' : 'Make Admin'}
-              </button>
-            </td>
-          `;
-          usersList.appendChild(row);
-        });
-        console.log("Users fetched successfully.");
-      } catch (error) {
-        console.error("Error fetching users:", error.code, error.message);
-        showToast("Failed to fetch users: " + error.message);
-      }
-    }
-
-    window.approveUser = async (userId) => {
-      const userRef = doc(db, 'users', userId);
-      try {
-        console.log("Approving user:", userId);
-        await updateDoc(userRef, { status: 'approved' });
-        showToast("User approved successfully.", "success");
-        fetchUsers();
-      } catch (error) {
-        console.error("Error approving user:", error.code, error.message);
-        showToast("Failed to approve user: " + error.message);
-      }
-    };
-
-    window.toggleAdmin = async (userId, role) => {
-      const userRef = doc(db, 'users', userId);
-      const button = event.target;
-      button.disabled = true;
-      button.textContent = "Processing...";
-      try {
-        console.log(`Setting user ${userId} role to: ${role}`);
-        await updateDoc(userRef, { role });
-        showToast(`User role updated to ${role}.`, "success");
-        fetchUsers();
-      } catch (error) {
-        console.error("Error updating user role:", error.code, error.message);
-        showToast("Failed to update role: " + error.message);
-      } finally {
-        button.disabled = false;
-        button.textContent = role === 'admin' ? 'Demote to User' : 'Make Admin';
-      }
-    };
-
-    // REVIEWS
-    const reviewsList = document.getElementById('reviewsList');
-    async function fetchReviews() {
-      reviewsList.innerHTML = '';
-      try {
-        console.log("Fetching reviews from Firestore...");
-        const snapshot = await getDocs(collection(db, 'reviews'));
-        if (snapshot.empty) {
-          reviewsList.innerHTML = '<p>No reviews found.</p>';
-          return;
-        }
-        snapshot.forEach(docSnap => {
-          const rev = docSnap.data();
-          const div = document.createElement('div');
-          div.className = 'review';
-          div.innerHTML = `
-            <p><strong>${rev.userName}</strong>: ${rev.text}</p>
-            <button class="delete-btn" onclick="deleteReview('${docSnap.id}')">Delete</button>
-          `;
-          reviewsList.appendChild(div);
-        });
-        console.log("Reviews fetched successfully.");
-      } catch (error) {
-        console.error("Error fetching reviews:", error.code, error.message);
-        showToast("Failed to fetch reviews: " + error.message);
-      }
-    }
-
-    window.deleteReview = async (reviewId) => {
-      const revRef = doc(db, 'reviews', reviewId);
-      try {
-        console.log("Deleting review:", reviewId);
-        await deleteDoc(revRef);
-        showToast("Review deleted successfully.", "success");
-        fetchReviews();
-      } catch (error) {
-        console.error("Error deleting review:", error.code, error.message);
-        showToast("Failed to delete review: " + error.message);
-      }
-    };
-  </script>
+  });
+</script>
 </body>
 </html>
