@@ -19,5 +19,6 @@ jobs:
           server: ftp.guluddenetraditionalhealers.org
           username: deploy@guluddenetraditionalhealers.org
           password: lg4LBx75*D@iWO[-
+          port: 22
 
           # done it
